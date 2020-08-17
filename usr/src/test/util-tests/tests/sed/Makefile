@@ -1,5 +1,3 @@
-#! /usr/bin/ksh -p
-#
 #
 # This file and its contents are supplied under the terms of the
 # Common Development and Distribution License ("CDDL"), version 1.0.
@@ -12,12 +10,28 @@
 #
 
 #
-# Copyright 2016 Nexenta Systems, Inc.
+# Copyright 2020 OmniOS Community Edition (OmniOSce) Association.
 #
 
-. $STF_SUITE/include/libtest.shlib
+include $(SRC)/cmd/Makefile.cmd
+include $(SRC)/test/Makefile.com
 
-typeset disks=(${DISKS[*]})
-typeset disk1=${disks[0]}
-typeset disk2=${disks[1]}
-typeset disk3=${disks[2]}
+PROG = sed_addr
+
+ROOTOPTPKG = $(ROOT)/opt/util-tests
+TESTDIR = $(ROOTOPTPKG)/tests
+
+CMDS = $(PROG:%=$(TESTDIR)/%)
+$(CMDS) := FILEMODE = 0555
+
+all clean clobber:
+
+install: all $(CMDS)
+
+$(CMDS): $(TESTDIR) $(PROG).ksh
+
+$(TESTDIR):
+	$(INS.dir)
+
+$(TESTDIR)/%: %.ksh
+	$(INS.rename)
