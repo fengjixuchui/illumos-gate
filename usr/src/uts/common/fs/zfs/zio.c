@@ -24,6 +24,7 @@
  * Copyright (c) 2011 Nexenta Systems, Inc. All rights reserved.
  * Copyright (c) 2014 Integros [integros.com]
  * Copyright (c) 2017, Intel Corporation.
+ * Copyright 2020 Joyent, Inc.
  */
 
 #include <sys/sysmacros.h>
@@ -479,7 +480,7 @@ error:
 		zio->io_error = SET_ERROR(EIO);
 		if ((zio->io_flags & ZIO_FLAG_SPECULATIVE) == 0) {
 			spa_log_error(spa, &zio->io_bookmark);
-			zfs_ereport_post(FM_EREPORT_ZFS_AUTHENTICATION,
+			(void) zfs_ereport_post(FM_EREPORT_ZFS_AUTHENTICATION,
 			    spa, NULL, &zio->io_bookmark, zio, 0, 0);
 		}
 	} else {
@@ -1984,7 +1985,11 @@ zio_suspend(spa_t *spa, zio_t *zio, zio_suspend_reason_t reason)
 		    "failure and the failure mode property for this pool "
 		    "is set to panic.", spa_name(spa));
 
-	zfs_ereport_post(FM_EREPORT_ZFS_IO_FAILURE, spa, NULL,
+	cmn_err(CE_WARN, "Pool '%s' has encountered an uncorrectable I/O "
+	    "failure and has been suspended; `zpool clear` will be required "
+	    "before the pool can be written to.", spa_name(spa));
+
+	(void) zfs_ereport_post(FM_EREPORT_ZFS_IO_FAILURE, spa, NULL,
 	    NULL, NULL, 0, 0);
 
 	mutex_enter(&spa->spa_suspend_lock);
@@ -4254,7 +4259,7 @@ zio_done(zio_t *zio)
 				zio->io_vd->vdev_stat.vs_slow_ios++;
 				mutex_exit(&zio->io_vd->vdev_stat_lock);
 
-				zfs_ereport_post(FM_EREPORT_ZFS_DELAY,
+				(void) zfs_ereport_post(FM_EREPORT_ZFS_DELAY,
 				    zio->io_spa, zio->io_vd, &zio->io_bookmark,
 				    zio, 0, 0);
 			}
@@ -4269,7 +4274,7 @@ zio_done(zio_t *zio)
 		 * device is currently unavailable.
 		 */
 		if (zio->io_error != ECKSUM && vd != NULL && !vdev_is_dead(vd))
-			zfs_ereport_post(FM_EREPORT_ZFS_IO, spa, vd,
+			(void) zfs_ereport_post(FM_EREPORT_ZFS_IO, spa, vd,
 			    &zio->io_bookmark, zio, 0, 0);
 
 		if ((zio->io_error == EIO || !(zio->io_flags &
@@ -4280,7 +4285,7 @@ zio_done(zio_t *zio)
 			 * error and generate a logical data ereport.
 			 */
 			spa_log_error(spa, &zio->io_bookmark);
-			zfs_ereport_post(FM_EREPORT_ZFS_DATA, spa, NULL,
+			(void) zfs_ereport_post(FM_EREPORT_ZFS_DATA, spa, NULL,
 			    &zio->io_bookmark, zio, 0, 0);
 		}
 	}
